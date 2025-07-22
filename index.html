@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Dental Invoice System</title>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      width: 90%;
+      margin-top: 20px;
+    }
+
+    .form-container, .preview-container {
+      width: 45%;
+      padding: 20px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      background: #f9f9f9;
+      box-sizing: border-box;
+    }
+
+    .form-container input, .form-container textarea, .form-container select {
+      width: 100%;
+      margin-bottom: 10px;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+
+    .preview-container {
+      background: white;
+      min-height: 500px;
+      position: relative;
+    }
+
+    .invoice {
+      font-family: monospace;
+      width: 800px;
+      height: 1000px;
+      position: relative;
+      background: url('Pro_Dental_Care_Invoice.jpg') no-repeat center top;
+      background-size: cover;
+      margin: 0 auto;
+    }
+
+    .field {
+      position: absolute;
+      font-size: 18px;
+      color: #222;
+      white-space: pre;
+    }
+
+    /* Field positions */
+    #previewInvoiceNumber { left: 666px; top: 165px; }
+    #previewDate { left: 610px; top: 205px; }
+    #previewPatientName { left: 175px; top: 320px; }
+    #previewAge { left: 175px; top: 355px; }
+    #previewSex { left: 295px; top: 355px; }
+    #previewAddress { left: 440px; top: 355px; width: 500px; }
+    #previewTotal { left: 610px; top: 940px; font-weight: bold; }
+    #previewSignature { left: 100px; top: 950px; font-size: 16px; }
+
+    .service-row-field {
+      left: 70px;
+      font-size: 16px;
+    }
+
+    .generate-btn {
+      margin-top: 20px;
+      padding: 10px 20px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .generate-btn:hover {
+      background: #0056b3;
+    }
+  </style>
+</head>
+<body>
+<h1>Dental Invoice System</h1>
+<div class="container">
+  <!-- Input Form -->
+  <div class="form-container">
+    <h2>Input Details</h2>
+    <label>Invoice Number</label>
+    <input type="text" id="invoiceNumber" placeholder="Enter Invoice Number">
+    <label>Date</label>
+    <input type="date" id="date" value="">
+    <label>Patient Name</label>
+    <input type="text" id="patientName" placeholder="Enter Patient Name">
+    <label>Age</label>
+    <input type="number" id="age" placeholder="Enter Age">
+    <label>Sex</label>
+    <select id="sex">
+      <option value="Male">Male</option>
+      <option value="Female">Female</option>
+      <option value="Other">Other</option>
+    </select>
+    <label>Address</label>
+    <textarea id="address" placeholder="Enter Address"></textarea>
+
+    <h3>Services</h3>
+    <div id="services">
+      <div class="service-row">
+        <input type="text" class="description" placeholder="Description">
+        <input type="number" class="quantity" placeholder="Qty" value="1">
+        <input type="number" class="price" placeholder="Price" value="0">
+      </div>
+    </div>
+    <button type="button" onclick="addService()">Add Service</button>
+  </div>
+
+  <!-- Invoice Preview -->
+  <div class="preview-container">
+    <div id="invoicePreview" class="invoice">
+      <span id="previewInvoiceNumber" class="field"></span>
+      <span id="previewDate" class="field"></span>
+      <span id="previewPatientName" class="field"></span>
+      <span id="previewAge" class="field"></span>
+      <span id="previewSex" class="field"></span>
+      <span id="previewAddress" class="field"></span>
+      <div id="servicePreviewFields"></div>
+      <span id="previewTotal" class="field"></span>
+      <span id="previewSignature" class="field">Authorised Signature</span>
+    </div>
+  </div>
+</div>
+
+<button class="generate-btn" onclick="generateImage()">Generate Invoice Image</button>
+
+<script>
+  document.getElementById('date').value = new Date().toISOString().split('T')[0];
+
+  function updatePreview() {
+    document.getElementById('previewInvoiceNumber').innerText = document.getElementById('invoiceNumber').value;
+    const dateParts = document.getElementById('date').value.split('-');
+    document.getElementById('previewDate').innerText = `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`;
+    document.getElementById('previewPatientName').innerText = document.getElementById('patientName').value;
+    document.getElementById('previewAge').innerText = " " + document.getElementById('age').value;
+    document.getElementById('previewSex').innerText = " " + document.getElementById('sex').value;
+    document.getElementById('previewAddress').innerText = document.getElementById('address').value;
+
+    const services = document.querySelectorAll('.service-row');
+    const previewContainer = document.getElementById('servicePreviewFields');
+    previewContainer.innerHTML = '';
+
+    let total = 0;
+
+    services.forEach((row, i) => {
+      const desc = row.querySelector('.description').value;
+      const qty = parseInt(row.querySelector('.quantity').value) || 0;
+      const price = parseFloat(row.querySelector('.price').value) || 0;
+      const sub = qty * price;
+      total += sub;
+
+      const span = document.createElement('span');
+      span.className = 'field service-row-field';
+      span.style.top = (505 + i * 30) + 'px';
+      span.innerText = `${desc.padEnd(36)} ${qty.toString().padEnd(5)} ₹${price.toFixed(2).padEnd(8)} ₹${sub.toFixed(2)}`;
+      previewContainer.appendChild(span);
+    });
+
+    document.getElementById('previewTotal').innerText = " ₹" + total.toFixed(2);
+  }
+
+  function addService() {
+    const services = document.getElementById('services');
+    const row = document.createElement('div');
+    row.className = 'service-row';
+    row.innerHTML = `
+      <input type="text" class="description" placeholder="Description">
+      <input type="number" class="quantity" placeholder="Qty" value="1">
+      <input type="number" class="price" placeholder="Price" value="0">
+    `;
+    services.appendChild(row);
+    row.querySelectorAll('input').forEach(input => input.addEventListener('input', updatePreview));
+    updatePreview();
+  }
+
+  function generateImage() {
+    const invoice = document.getElementById('invoicePreview');
+    html2canvas(invoice, { scale: 2 }).then(canvas => {
+      const link = document.createElement('a');
+      link.download = `ProDentalCare_Invoice_${document.getElementById('invoiceNumber').value || '000'}.jpg`;
+      link.href = canvas.toDataURL('image/jpeg');
+      link.click();
+    });
+  }
+
+  // Attach listeners
+  document.querySelectorAll('input, textarea, select').forEach(input => {
+    input.addEventListener('input', updatePreview);
+  });
+
+  updatePreview(); // Initial run
+</script>
+</body>
+</html>
