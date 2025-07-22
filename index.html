@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Dental Invoice System</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <style>
     body {
@@ -16,15 +17,16 @@
 
     .container {
       display: flex;
-      flex-wrap: wrap;
-      justify-content: space-between;
+      flex-wrap: nowrap;
+      justify-content: flex-start;
       width: 90%;
-      margin-top: 20px;
+      gap: 0px;
+      margin-top: 5px;
     }
 
     .form-container, .preview-container {
       width: 45%;
-      padding: 20px;
+      padding: 5px;
       border: 1px solid #ccc;
       border-radius: 5px;
       background: #f9f9f9;
@@ -80,6 +82,7 @@
 
     .generate-btn {
       margin-top: 20px;
+      margin-right: 10px;
       padding: 10px 20px;
       background: #007bff;
       color: white;
@@ -143,7 +146,11 @@
   </div>
 </div>
 
-<button class="generate-btn" onclick="generateImage()">Generate Invoice Image</button>
+<!-- Buttons -->
+<div style="margin: 20px;">
+  <button class="generate-btn" onclick="generateImage()">Generate Invoice Image</button>
+  <button class="generate-btn" onclick="resetForm()">Reset</button>
+</div>
 
 <script>
   document.getElementById('date').value = new Date().toISOString().split('T')[0];
@@ -204,10 +211,32 @@
     });
   }
 
-  // Attach listeners
-  document.querySelectorAll('input, textarea, select').forEach(input => {
-    input.addEventListener('input', updatePreview);
-  });
+  function resetForm() {
+    document.getElementById('invoiceNumber').value = '';
+    document.getElementById('date').value = new Date().toISOString().split('T')[0];
+    document.getElementById('patientName').value = '';
+    document.getElementById('age').value = '';
+    document.getElementById('sex').value = 'Male';
+    document.getElementById('address').value = '';
+
+    const services = document.getElementById('services');
+    services.innerHTML = '';
+    const row = document.createElement('div');
+    row.className = 'service-row';
+    row.innerHTML = `
+      <input type="text" class="description" placeholder="Description">
+      <input type="number" class="quantity" placeholder="Qty" value="1">
+      <input type="number" class="price" placeholder="Price" value="0">
+    `;
+    services.appendChild(row);
+    row.querySelectorAll('input').forEach(input => input.addEventListener('input', updatePreview));
+
+    updatePreview();
+  }
+
+  document.querySelectorAll('input, textarea, select').forEach(input =>
+    input.addEventListener('input', updatePreview)
+  );
 
   updatePreview(); // Initial run
 </script>
