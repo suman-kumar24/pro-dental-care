@@ -51,10 +51,11 @@
     .invoice {
       font-family: monospace;
       width: 800px;
-      height: 1000px;
+      aspect-ratio: 800 / 1200;
       position: relative;
       background: url('Pro_Dental_Care_Invoice.jpg') no-repeat center top;
-      background-size: cover;
+      background-size: contain;
+      background-color: white;
       margin: 0 auto;
     }
 
@@ -141,7 +142,7 @@
       <span id="previewAddress" class="field"></span>
       <div id="servicePreviewFields"></div>
       <span id="previewTotal" class="field"></span>
-      <span id="previewSignature" class="field">Authorised Signature</span>
+      <!-- <span id="previewSignature" class="field">Authorised Signature</span> -->
     </div>
   </div>
 </div>
@@ -149,6 +150,7 @@
 <!-- Buttons -->
 <div style="margin: 20px;">
   <button class="generate-btn" onclick="generateImage()">Generate Invoice Image</button>
+  <button class="generate-btn" onclick="generatePNGImage()">Generate PNG Image</button>
   <button class="generate-btn" onclick="resetForm()">Reset</button>
 </div>
 
@@ -207,6 +209,16 @@
       const link = document.createElement('a');
       link.download = `ProDentalCare_Invoice_${document.getElementById('invoiceNumber').value || '000'}.jpg`;
       link.href = canvas.toDataURL('image/jpeg');
+      link.click();
+    });
+  }
+
+  function generatePNGImage() {
+    const invoice = document.getElementById('invoicePreview');
+    html2canvas(invoice, { scale: 4, letterRendering: true }).then(canvas => {
+      const link = document.createElement('a');
+      link.download = `ProDentalCare_Invoice_${document.getElementById('invoiceNumber').value || '000'}.png`;
+      link.href = canvas.toDataURL('image/png');
       link.click();
     });
   }
