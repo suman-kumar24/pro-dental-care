@@ -72,7 +72,14 @@
     #previewPatientName { left: 175px; top: 320px; }
     #previewAge { left: 175px; top: 355px; }
     #previewSex { left: 295px; top: 355px; }
-    #previewAddress { left: 440px; top: 355px; width: 500px; }
+    #previewAddress { 
+      left: 440px; 
+      top: 355px; 
+      width: 300px; 
+      white-space: normal; 
+      line-height: 1.2;
+      text-align: left;
+    }
     #previewTotal { left: 610px; top: 940px; font-weight: bold; }
     #previewSignature { left: 100px; top: 950px; font-size: 16px; }
 
@@ -95,6 +102,15 @@
     .generate-btn:hover {
       background: #0056b3;
     }
+
+    .address-line {
+    position: absolute;
+    z-index: 2;
+    white-space: pre;
+    font-size: 18px;
+    color: #222;
+    }
+
   </style>
 </head>
 <body>
@@ -164,7 +180,55 @@
     document.getElementById('previewPatientName').innerText = document.getElementById('patientName').value;
     document.getElementById('previewAge').innerText = " " + document.getElementById('age').value;
     document.getElementById('previewSex').innerText = " " + document.getElementById('sex').value;
-    document.getElementById('previewAddress').innerText = document.getElementById('address').value;
+    //document.getElementById('previewAddress').innerText = document.getElementById('address').value;
+
+    // to adjust the second line of address (09/11/2025)
+    // Handle multi-line address with custom positioning
+    const addressValue = document.getElementById('address').value.trim();
+    const addressLines = addressValue.split('\n');
+    const invoice = document.getElementById('invoicePreview');
+    const previewAddress = document.getElementById('previewAddress');
+
+    // Hide base preview span text so it doesn't overlap
+    previewAddress.style.display = 'none';
+
+    // Remove any previously added address lines
+    invoice.querySelectorAll('.address-line').forEach(el => el.remove());
+
+    // First line (main position)
+    if (addressLines[0]) {
+      const line1 = document.createElement('span');
+      line1.className = 'address-line';
+      line1.style.left = '440px';
+      line1.style.top = '355px';
+      line1.textContent = addressLines[0];
+      invoice.appendChild(line1);
+    }
+
+    // Second line (custom position)
+    if (addressLines[1]) {
+      const line2 = document.createElement('span');
+      line2.className = 'address-line';
+      line2.style.left = '165px';
+      line2.style.top = '390px';
+      line2.textContent = addressLines[1];
+      invoice.appendChild(line2);
+    }
+
+    // Third line (custom position) 
+    if (addressLines[2]) {
+      const line3 = document.createElement('span');
+      line3.className = 'address-line';
+      line3.style.left = '165px';
+      line3.style.top = '410px';
+      line3.textContent = addressLines[2];
+      invoice.appendChild(line3);
+    }
+
+
+
+
+
 
     const services = document.querySelectorAll('.service-row');
     const previewContainer = document.getElementById('servicePreviewFields');
@@ -242,6 +306,8 @@
     `;
     services.appendChild(row);
     row.querySelectorAll('input').forEach(input => input.addEventListener('input', updatePreview));
+    
+    document.getElementById('previewAddress').style.display = 'block';
 
     updatePreview();
   }
