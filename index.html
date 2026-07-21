@@ -14,7 +14,7 @@
       flex-direction: column;
       align-items: center;
     }
-
+ 
     .container {
       display: flex;
       flex-wrap: nowrap;
@@ -23,7 +23,7 @@
       gap: 0px;
       margin-top: 5px;
     }
-
+ 
     .form-container, .preview-container {
       width: 45%;
       padding: 5px;
@@ -32,7 +32,7 @@
       background: #f9f9f9;
       box-sizing: border-box;
     }
-
+ 
     .form-container input, .form-container textarea, .form-container select {
       width: 100%;
       margin-bottom: 10px;
@@ -41,53 +41,57 @@
       border-radius: 4px;
       box-sizing: border-box;
     }
-
+ 
     .preview-container {
       background: white;
       min-height: 500px;
       position: relative;
     }
-
+ 
+    /* Letter_Pad.jpg is 2481 x 3508 (ratio 0.7072) - aspect-ratio matches
+       the real file exactly so there's no leftover blank strip at the
+       bottom of exported images. */
     .invoice {
       font-family: monospace;
       width: 800px;
-      aspect-ratio: 800 / 1200;
+      aspect-ratio: 2481 / 3508;
       position: relative;
-      background: url('Pro_Dental_Care_Invoice.jpg') no-repeat center top;
+      background: url('Letter_Pad.jpg') no-repeat center top;
       background-size: contain;
       background-color: white;
       margin: 0 auto;
     }
-
+ 
     .field {
       position: absolute;
       font-size: 18px;
       color: #222;
       white-space: pre;
     }
-
-    /* Field positions */
-    #previewInvoiceNumber { left: 666px; top: 165px; }
-    #previewDate { left: 610px; top: 205px; }
-    #previewPatientName { left: 175px; top: 320px; }
-    #previewAge { left: 175px; top: 355px; }
-    #previewSex { left: 295px; top: 355px; }
-    #previewAddress { 
-      left: 440px; 
-      top: 355px; 
-      width: 300px; 
-      white-space: normal; 
-      line-height: 1.2;
-      text-align: left;
-    }
-    #previewTotal { left: 610px; top: 940px; font-weight: bold; }
-    #previewSignature { left: 100px; top: 950px; font-size: 16px; }
-
-    .service-row-field {
-      left: 70px;
+ 
+    /* Field positions - calibrated against Letter_Pad.jpg at 800px render width */
+    #previewInvoiceNumber { left: 665px; top: 150px; }
+    #previewDate { left: 600px; top: 190px; }
+    #previewPatientName { left: 155px; top: 335px; }
+    #previewAge { left: 155px; top: 370px; }
+    #previewSex { left: 295px; top: 370px; }
+    #previewPtMobNo { left: 478px; top: 370px; }
+    #previewAddress {
+      left: 155px;
+      top: 405px;
+      max-width: 600px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
       font-size: 16px;
     }
-
+    #previewTotal { left: 590px; top: 955px; font-weight: bold; }
+ 
+    .service-row-field {
+      left: 65px;
+      font-size: 16px;
+    }
+ 
     .generate-btn {
       margin-top: 20px;
       margin-right: 10px;
@@ -98,19 +102,10 @@
       border-radius: 5px;
       cursor: pointer;
     }
-
+ 
     .generate-btn:hover {
       background: #0056b3;
     }
-
-    .address-line {
-    position: absolute;
-    z-index: 2;
-    white-space: pre;
-    font-size: 18px;
-    color: #222;
-    }
-
   </style>
 </head>
 <body>
@@ -126,27 +121,29 @@
     <label>Patient Name</label>
     <input type="text" id="patientName" placeholder="Enter Patient Name">
     <label>Age</label>
-    <input type="number" id="age" placeholder="Enter Age">
+    <input type="number" id="age" placeholder="Enter Age" min="0">
     <label>Sex</label>
     <select id="sex">
       <option value="Male">Male</option>
       <option value="Female">Female</option>
       <option value="Other">Other</option>
     </select>
+    <label>Pt. Mobile No.</label>
+    <input type="tel" id="ptMobNo" placeholder="Enter Patient Mobile No.">
     <label>Address</label>
     <textarea id="address" placeholder="Enter Address"></textarea>
-
+ 
     <h3>Services</h3>
     <div id="services">
       <div class="service-row">
         <input type="text" class="description" placeholder="Description">
-        <input type="number" class="quantity" placeholder="Qty" value="1">
-        <input type="number" class="price" placeholder="Price" value="0">
+        <input type="number" class="quantity" placeholder="Qty" value="1" min="0">
+        <input type="number" class="price" placeholder="Price" value="0" min="0">
       </div>
     </div>
     <button type="button" onclick="addService()">Add Service</button>
   </div>
-
+ 
   <!-- Invoice Preview -->
   <div class="preview-container">
     <div id="invoicePreview" class="invoice">
@@ -155,118 +152,93 @@
       <span id="previewPatientName" class="field"></span>
       <span id="previewAge" class="field"></span>
       <span id="previewSex" class="field"></span>
+      <span id="previewPtMobNo" class="field"></span>
       <span id="previewAddress" class="field"></span>
       <div id="servicePreviewFields"></div>
       <span id="previewTotal" class="field"></span>
-      <!-- <span id="previewSignature" class="field">Authorised Signature</span> -->
     </div>
   </div>
 </div>
-
+ 
 <!-- Buttons -->
 <div style="margin: 20px;">
   <button class="generate-btn" onclick="generateImage()">Generate Invoice Image</button>
   <button class="generate-btn" onclick="generatePNGImage()">Generate PNG Image</button>
   <button class="generate-btn" onclick="resetForm()">Reset</button>
 </div>
-
+ 
 <script>
+  // Row layout for the services table (calibrated against Letter_Pad.jpg)
+  const SERVICE_START_TOP = 500;
+  const SERVICE_ROW_HEIGHT = 32;
+ 
   document.getElementById('date').value = new Date().toISOString().split('T')[0];
-
+ 
+  function createServiceRow() {
+    const row = document.createElement('div');
+    row.className = 'service-row';
+    row.innerHTML = `
+      <input type="text" class="description" placeholder="Description">
+      <input type="number" class="quantity" placeholder="Qty" value="1" min="0">
+      <input type="number" class="price" placeholder="Price" value="0" min="0">
+    `;
+    row.querySelectorAll('input').forEach(input => input.addEventListener('input', updatePreview));
+    return row;
+  }
+ 
   function updatePreview() {
     document.getElementById('previewInvoiceNumber').innerText = document.getElementById('invoiceNumber').value;
-    const dateParts = document.getElementById('date').value.split('-');
-    document.getElementById('previewDate').innerText = `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`;
+ 
+    const dateVal = document.getElementById('date').value;
+    document.getElementById('previewDate').innerText = dateVal
+      ? dateVal.split('-').reverse().join('-')
+      : '';
+ 
     document.getElementById('previewPatientName').innerText = document.getElementById('patientName').value;
     document.getElementById('previewAge').innerText = " " + document.getElementById('age').value;
     document.getElementById('previewSex').innerText = " " + document.getElementById('sex').value;
-    //document.getElementById('previewAddress').innerText = document.getElementById('address').value;
-
-    // to adjust the second line of address (09/11/2025)
-    // Handle multi-line address with custom positioning
-    const addressValue = document.getElementById('address').value.trim();
-    const addressLines = addressValue.split('\n');
-    const invoice = document.getElementById('invoicePreview');
-    const previewAddress = document.getElementById('previewAddress');
-
-    // Hide base preview span text so it doesn't overlap
-    previewAddress.style.display = 'none';
-
-    // Remove any previously added address lines
-    invoice.querySelectorAll('.address-line').forEach(el => el.remove());
-
-    // First line (main position)
-    if (addressLines[0]) {
-      const line1 = document.createElement('span');
-      line1.className = 'address-line';
-      line1.style.left = '440px';
-      line1.style.top = '355px';
-      line1.textContent = addressLines[0];
-      invoice.appendChild(line1);
-    }
-
-    // Second line (custom position)
-    if (addressLines[1]) {
-      const line2 = document.createElement('span');
-      line2.className = 'address-line';
-      line2.style.left = '165px';
-      line2.style.top = '390px';
-      line2.textContent = addressLines[1];
-      invoice.appendChild(line2);
-    }
-
-    // Third line (custom position) 
-    if (addressLines[2]) {
-      const line3 = document.createElement('span');
-      line3.className = 'address-line';
-      line3.style.left = '165px';
-      line3.style.top = '410px';
-      line3.textContent = addressLines[2];
-      invoice.appendChild(line3);
-    }
-
-
-
-
-
-
+    document.getElementById('previewPtMobNo').innerText = " " + document.getElementById('ptMobNo').value;
+ 
+    // Letter_Pad.jpg only has one printed "ADD. :" line, so multi-line
+    // input gets condensed onto a single line instead of wrapping.
+    const addressValue = document.getElementById('address').value
+      .trim()
+      .split('\n')
+      .map(l => l.trim())
+      .filter(Boolean)
+      .join(', ');
+    document.getElementById('previewAddress').innerText = addressValue;
+ 
     const services = document.querySelectorAll('.service-row');
     const previewContainer = document.getElementById('servicePreviewFields');
     previewContainer.innerHTML = '';
-
+ 
     let total = 0;
-
+ 
     services.forEach((row, i) => {
       const desc = row.querySelector('.description').value;
       const qty = parseInt(row.querySelector('.quantity').value) || 0;
       const price = parseFloat(row.querySelector('.price').value) || 0;
       const sub = qty * price;
       total += sub;
-
+ 
       const span = document.createElement('span');
       span.className = 'field service-row-field';
-      span.style.top = (505 + i * 30) + 'px';
+      span.style.top = (SERVICE_START_TOP + i * SERVICE_ROW_HEIGHT) + 'px';
       span.innerText = `${desc.padEnd(36)} ${qty.toString().padEnd(5)} ₹${price.toFixed(2).padEnd(8)} ₹${sub.toFixed(2)}`;
       previewContainer.appendChild(span);
     });
-
+ 
     document.getElementById('previewTotal').innerText = " ₹" + total.toFixed(2);
   }
-
+ 
   function addService() {
     const services = document.getElementById('services');
-    const row = document.createElement('div');
-    row.className = 'service-row';
-    row.innerHTML = `
-      <input type="text" class="description" placeholder="Description">
-      <input type="number" class="quantity" placeholder="Qty" value="1">
-      <input type="number" class="price" placeholder="Price" value="0">
-    `;
+    const row = createServiceRow();
     services.appendChild(row);
-    row.querySelectorAll('input').forEach(input => input.addEventListener('input', updatePreview));
     updatePreview();
   }
-
+ 
   function generateImage() {
     const invoice = document.getElementById('invoicePreview');
     html2canvas(invoice, { scale: 2 }).then(canvas => {
@@ -274,9 +246,12 @@
       link.download = `ProDentalCare_Invoice_${document.getElementById('invoiceNumber').value || '000'}.jpg`;
       link.href = canvas.toDataURL('image/jpeg');
       link.click();
+    }).catch(err => {
+      alert('Could not generate the invoice image. Please try again.');
+      console.error(err);
     });
   }
-
+ 
   function generatePNGImage() {
     const invoice = document.getElementById('invoicePreview');
     html2canvas(invoice, { scale: 4, letterRendering: true }).then(canvas => {
@@ -284,39 +259,36 @@
       link.download = `ProDentalCare_Invoice_${document.getElementById('invoiceNumber').value || '000'}.png`;
       link.href = canvas.toDataURL('image/png');
       link.click();
+    }).catch(err => {
+      alert('Could not generate the invoice image. Please try again.');
+      console.error(err);
     });
   }
-
+ 
   function resetForm() {
     document.getElementById('invoiceNumber').value = '';
     document.getElementById('date').value = new Date().toISOString().split('T')[0];
     document.getElementById('patientName').value = '';
     document.getElementById('age').value = '';
     document.getElementById('sex').value = 'Male';
+    document.getElementById('ptMobNo').value = '';
     document.getElementById('address').value = '';
-
+ 
     const services = document.getElementById('services');
     services.innerHTML = '';
-    const row = document.createElement('div');
-    row.className = 'service-row';
-    row.innerHTML = `
-      <input type="text" class="description" placeholder="Description">
-      <input type="number" class="quantity" placeholder="Qty" value="1">
-      <input type="number" class="price" placeholder="Price" value="0">
-    `;
-    services.appendChild(row);
-    row.querySelectorAll('input').forEach(input => input.addEventListener('input', updatePreview));
-    
-    document.getElementById('previewAddress').style.display = 'block';
-
+    services.appendChild(createServiceRow());
+ 
     updatePreview();
   }
-
+ 
   document.querySelectorAll('input, textarea, select').forEach(input =>
     input.addEventListener('input', updatePreview)
   );
-
+ 
   updatePreview(); // Initial run
 </script>
 </body>
 </html>
+ 
+
+
